@@ -1,0 +1,69 @@
+/* Frontend/src/theme.css */
+:root {
+  /* --- Liquid Glass Theme Variables --- */
+  
+  /* The "Liquid" Background Gradient Colors */
+  --liquid-bg-1: #f0f8ff;
+  --liquid-bg-2: #e6e9f0;
+  --liquid-blob-1: #ff9a9e;
+  --liquid-blob-2: #fad0c4;
+  --liquid-blob-3: #a18cd1;
+  
+  /* Glass Panels */
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  --glass-blur: 20px;
+
+  /* Text */
+  --text: #1d1d1f; /* Apple Dark Grey */
+  --text-secondary: #86868b;
+  --border: rgba(0,0,0,0.1); /* Fallback border */
+  
+  /* Accents */
+  --primary: #0071e3; /* Apple Blue */
+  --primary-hover: #0077ed;
+  --button-text: #ffffff;
+  --danger: #ff3b30;
+  
+  /* Chat Colors */
+  --chat-me-bg: linear-gradient(135deg, #0071e3, #00c6ff);
+  --chat-me-text: #ffffff;
+  --chat-them-bg: rgba(255, 255, 255, 0.5);
+  --chat-them-text: #1d1d1f;
+
+  /* Components */
+  --card-radius: 24px;
+  --nav-active-bg: rgba(0, 0, 0, 0.05);
+  
+  --max-width: 980px;
+  --nav-height: 60px;
+  --sidebar-width: 280px;
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  /* Dark Mode Liquid */
+  --liquid-bg-1: #000000;
+  --liquid-bg-2: #1a1a1a;
+  --liquid-blob-1: #434343;
+  --liquid-blob-2: #000000;
+  --liquid-blob-3: #2c3e50;
+
+  /* Dark Glass */
+  --glass-bg: rgba(30, 30, 30, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+  
+  --text: #f5f5f7;
+  --text-secondary: #86868b;
+  --border: rgba(255,255,255,0.1);
+  
+  --chat-them-bg: rgba(255, 255, 255, 0.1);
+  --chat-them-text: #f5f5f7;
+  
+  --nav-active-bg: rgba(255, 255, 255, 0.1);
+
+  color-scheme: dark;
+}

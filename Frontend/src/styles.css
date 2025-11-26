@@ -1,0 +1,144 @@
+/* Frontend/src/styles.css */
+
+/* Base Layout Reset */
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+
+.app {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* iOS 26 FLOATING LAYOUT */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  height: 100dvh;
+  padding: 16px; /* Floating gap */
+  gap: 20px;
+  overflow: hidden; /* Prevent body scroll */
+}
+
+/* Floating Glass Sidebar */
+.sidebar {
+  display: none; /* Hidden on mobile */
+  position: sticky;
+  top: 0;
+  height: 100%;
+  padding: 40px 20px;
+  
+  background: var(--glass-bg);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--glass-shadow);
+  
+  flex-direction: column;
+  z-index: 100;
+}
+
+.sidebar .brand {
+  font-family: "Grand Hotel", cursive;
+  font-size: 2.4rem;
+  margin-bottom: 40px;
+  padding-left: 10px;
+  background: linear-gradient(45deg, #405de6, #5851db, #833ab4, #c13584, #e1306c, #fd1d1d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.navlist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Navigation Links */
+.navlink {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px;
+  border-radius: 18px; /* Squiresent */
+  color: var(--text);
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  margin-bottom: 4px;
+  opacity: 0.8;
+}
+
+.navlink:hover {
+  background: rgba(255, 255, 255, 0.2);
+  opacity: 1;
+  transform: scale(1.02);
+}
+
+.navlink.active {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  font-weight: 600;
+  opacity: 1;
+}
+.navlink.active .navicon {
+  color: var(--primary);
+  transform: scale(1.1);
+}
+
+.navicon { width: 26px; height: 26px; display: flex; align-items: center; }
+.navtext { font-size: 1.1rem; letter-spacing: -0.02em; font-weight: 500; }
+
+/* Main Content Area */
+.content {
+  height: 100%;
+  overflow-y: auto; 
+  border-radius: var(--card-radius);
+  padding-bottom: 100px; /* Space for bottom nav */
+  scrollbar-width: none;
+}
+.content::-webkit-scrollbar { display: none; }
+
+/* Desktop Grid Adjustment */
+@media (min-width: 1024px) {
+  .layout {
+    grid-template-columns: 280px 1fr;
+  }
+  .sidebar { display: flex !important; }
+  .bottomnav { display: none !important; }
+}
+
+/* Mobile Navigation (Bottom Glass Bar) */
+.bottomnav {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  height: 75px;
+  
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 40px; /* Pill */
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 1000;
+}
+[data-theme="dark"] .bottomnav { background: rgba(30, 30, 30, 0.8); }
+
+.bottomnav .navlink {
+  padding: 12px;
+  margin: 0;
+  border-radius: 50%;
+  flex-direction: column;
+  gap: 0;
+}
+.bottomnav .navlink.active {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-5px);
+}
