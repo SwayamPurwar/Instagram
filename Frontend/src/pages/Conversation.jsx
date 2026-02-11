@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
-
+import config from "../config"; // <--- IMPORT CONFIG
 export default function Conversation() {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Define API_URL
-  const API_URL = "http://localhost:3000";
+// FIX: Use config
+  const API_URL = config.API_URL;
 
   useEffect(() => {
     // Use API_URL

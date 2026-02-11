@@ -22,7 +22,13 @@ import {
 } from "../middlewares/validator.middleware.js";
 import multer from "multer";
 
-const upload = multer({ storage: multer.memoryStorage() });
+
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // FIX: Limit file size to 5MB
+  }
+});
 const router = express.Router();
 /* GET Routes */
 router.get("/", getPostsValidator, authMiddleware, getPostController);

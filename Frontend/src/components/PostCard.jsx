@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useToast } from "../context/ToastContext.jsx";
 import { timeAgo } from "../utils/timeAgo.js";
 import RichText from "./RichText";
-
+import config from "../config";
 export default function PostCard({
   id,
   username,
@@ -29,7 +29,7 @@ export default function PostCard({
 
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const isOwner = currentUser.username === username;
-  const API_URL = "http://localhost:3000";
+  const API_URL = config.API_URL;
 
   let addToast = (msg) => console.log(msg);
   try {

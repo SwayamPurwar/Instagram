@@ -21,14 +21,29 @@ export default function App() {
     // 1. Apply Theme Immediately (Prevents flash of wrong theme)
     const savedTheme = localStorage.getItem("theme") || "light";
     document.documentElement.setAttribute("data-theme", savedTheme);
-
-    // 2. Show Splash Screen for 2.5 seconds
-    const timer = setTimeout(() => {
+// 2. Verify Session
+  const checkSession = async () => {
+    try {
+      // You need to create this simple endpoint in backend that returns 200 if token is valid
+      // await axios.get(`${config.API_URL}/auth/verify`, { withCredentials: true });
+      
+      // For now, at least check if we have the user in localStorage
+      const user = localStorage.getItem("user");
+      if (!user) {
+         // If no user, stop loading immediately
+         setAppLoading(false);
+      } else {
+         // Optional: Give a small buffer for smooth animation
+         setTimeout(() => setAppLoading(false), 1500);
+      }
+    } catch (err) {
+      localStorage.removeItem("user");
       setAppLoading(false);
-    }, 2500); 
+    }
+  };
 
-    return () => clearTimeout(timer);
-  }, []);
+  checkSession();
+}, []);
 
   // --- RENDER SPLASH SCREEN ---
   if (appLoading) {

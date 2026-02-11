@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios"; // <--- Import axios
 import { useToast } from "../context/ToastContext.jsx"; // <--- Import toast
-
+import config from "../config";
 export default function StoryViewer({ stories, onClose }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -14,7 +14,7 @@ export default function StoryViewer({ stories, onClose }) {
 
   const currentStory = stories[currentIndex];
   const DURATION = 5000; 
-  const API_URL = "http://localhost:3000";
+  const API_URL = config.API_URL;
   
   let addToast = (msg) => console.log(msg);
   try { const toast = useToast(); if (toast) addToast = toast.addToast; } catch (e) {}

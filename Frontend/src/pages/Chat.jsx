@@ -3,6 +3,7 @@ import { io } from "socket.io-client";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { useToast } from "../context/ToastContext.jsx";
+import config from "../config"; // <--- IMPORT CONFIG
 
 export default function Chat() {
   const { receiverId } = useParams();
@@ -24,7 +25,9 @@ export default function Chat() {
   
   const navigate = useNavigate();
   const { addToast } = useToast();
-  const API_URL = "http://localhost:3000";
+  
+  // FIX: Use config
+  const API_URL = config.API_URL;
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -76,7 +79,6 @@ export default function Chat() {
   useEffect(() => {
     if (messagesEndRef.current) {
         if (isFirstLoad.current) {
-            // Small delay to ensure DOM paint
             setTimeout(() => {
                 messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
             }, 100);

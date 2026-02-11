@@ -3,7 +3,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { useToast } from "../context/ToastContext.jsx";
-
+import config from "../config";
 function Icon({ children }) {
   return <span className="navicon" aria-hidden>{children}</span>;
 }
@@ -24,7 +24,7 @@ const ProfileIcon = () => <svg viewBox="0 0 24 24" width="24" height="24" fill="
 export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const API_URL = "http://localhost:3000";
+  const API_URL = config.API_URL;
   const { addToast } = useToast();
   
   const [unreadCount, setUnreadCount] = useState(0);

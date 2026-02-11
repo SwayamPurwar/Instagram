@@ -6,8 +6,22 @@ import { ToastProvider } from "./context/ToastContext.jsx"; // Ensure this impor
 import "./theme.css";
 import "./styles.css";
 import "./App.css";
-
+import axios from "axios";
 const root = createRoot(document.getElementById("root"));
+// Add this before your root.render call
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // FIX: Clear local storage and redirect if token is invalid
+      localStorage.removeItem("user");
+      if (window.location.pathname !== "/login" && window.location.pathname !== "/register") {
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 root.render(
   <BrowserRouter
   future={{

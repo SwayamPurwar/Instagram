@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-
+import config from "../config"; // <--- IMPORT CONFIG
 export default function CreatePost() {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -14,8 +14,8 @@ export default function CreatePost() {
   
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
-
-  const API_URL = "http://localhost:3000";
+// FIX: Use config
+  const API_URL = config.API_URL;
 
   const loadFile = (file) => {
     if (!file) return;

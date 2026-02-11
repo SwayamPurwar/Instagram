@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-
+import config from "../config"; // <--- IMPORT CONFIG
 export default function EditProfile() {
   const [bio, setBio] = useState("");
   const [imageFile, setImageFile] = useState(null);
@@ -11,10 +11,8 @@ export default function EditProfile() {
 
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
-
-  // Define API_URL
-  const API_URL = "http://localhost:3000";
-
+// FIX: Use config
+  const API_URL = config.API_URL;
   // Load current user data
   useEffect(() => {
     const stored = localStorage.getItem("user");

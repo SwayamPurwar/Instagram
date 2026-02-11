@@ -5,6 +5,7 @@ import SkeletonPost from "../components/SkeletonPost.jsx";
 import axios from "axios";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
+import config from "../config"; // <--- IMPORT CONFIG
 
 export default function Home() {
   const [posts, setPosts] = useState([]);
@@ -16,7 +17,8 @@ export default function Home() {
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const observer = useRef();
 
-  const API_URL = "http://localhost:3000";
+  // FIX: Use config
+  const API_URL = config.API_URL;
   const LIMIT = 10;
 
   useEffect(() => {
@@ -118,7 +120,7 @@ export default function Home() {
                   <PostCard
                     id={post._id}
                     username={post.user?.username || "Unknown User"}
-                    userId={post.user?._id} /* <--- FIX HERE */
+                    userId={post.user?._id}
                     avatarUrl={post.user?.image}
                     postImage={post.image}
                     likesCount={post.likeCount}

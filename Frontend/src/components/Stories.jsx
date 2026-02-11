@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useToast } from "../context/ToastContext.jsx";
 import StoryViewer from "./StoryViewer.jsx"; 
-
+import config from "../config";
 export default function Stories() {
   const [stories, setStories] = useState([]);
   const [viewingStories, setViewingStories] = useState(null); 
@@ -11,7 +11,7 @@ export default function Stories() {
   let addToast = (msg) => console.log(msg);
   try { const toast = useToast(); if (toast) addToast = toast.addToast; } catch (e) {}
 
-  const API_URL = "http://localhost:3000";
+const API_URL = config.API_URL;
   
   const groupedStories = stories.reduce((acc, story) => {
     if (!story.user) return acc;

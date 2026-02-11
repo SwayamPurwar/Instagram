@@ -1,29 +1,51 @@
 import { Server } from "socket.io";
 import cookie from "cookie";
 import jwt from "jsonwebtoken";
-import { createMessage } from "../dao/message.dao.js"; 
-import config from "../config/config.js"; 
+import { createMessage } from "../dao/message.dao.js";
+import config from "../config/config.js";
+// FIX 1: Import Redis Adapter dependencies
+import { createAdapter } from "@socket.io/redis-adapter";
+import { createClient } from "redis";
 
 let io;
-// Map to track online users: UserId -> Set(SocketIds)
-const userSockets = new Map(); 
+// We keep a simple Set for online status tracking (green dot).
+// For routing, we now use Socket.io Rooms.
+const onlineUsers = new Set();
 
 export function sendNotification(receiverId, eventType, data) {
-  if (userSockets.has(String(receiverId)) && io) {
-    const sockets = userSockets.get(String(receiverId));
-    for (const socketId of sockets) {
-      io.to(socketId).emit(eventType, data);
-    }
+  if (io) {
+    // FIX 2: Send to the room named after the user's ID.
+    // This works across multiple servers if Redis is set up.
+    io.to(String(receiverId)).emit(eventType, data);
   }
 }
 
-function setupSocket(server) {
+async function setupSocket(server) {
+  // FIX 3: Dynamic CORS from environment variable
+  const origin = process.env.CORS_ORIGIN || "http://localhost:5173";
+
   io = new Server(server, {
     cors: {
-      origin: "http://localhost:5173",
+      origin: origin,
       credentials: true,
     },
   });
+
+  // FIX 4: Setup Redis Adapter for Scalability
+  // (Only activates if REDIS_URL is provided in .env)
+  if (process.env.REDIS_URL) {
+    try {
+      const pubClient = createClient({ url: process.env.REDIS_URL });
+      const subClient = pubClient.duplicate();
+
+      await Promise.all([pubClient.connect(), subClient.connect()]);
+      
+      io.adapter(createAdapter(pubClient, subClient));
+      console.log("✅ Redis Adapter connected");
+    } catch (err) {
+      console.error("❌ Redis Connection Error:", err.message);
+    }
+  }
 
   // Middleware: Authentication
   io.use((socket, next) => {
@@ -33,7 +55,7 @@ function setupSocket(server) {
     if (!token) return next(new Error("Authentication error"));
 
     try {
-      const decoded = jwt.verify(token, config.JWT_SECRET); 
+      const decoded = jwt.verify(token, config.JWT_SECRET);
       socket.user = decoded;
       next();
     } catch (err) {
@@ -44,59 +66,52 @@ function setupSocket(server) {
   io.on("connection", (socket) => {
     const userId = socket.user._id.toString();
 
-    // 1. Add User to Map
-    if (!userSockets.has(userId)) {
-      userSockets.set(userId, new Set());
-    }
-    userSockets.get(userId).add(socket.id);
+    // FIX 5: Scalable Routing -> User joins a room with their own ID
+    socket.join(userId);
 
-    // 2. Broadcast Updated Online List to ALL clients
-    io.emit("getOnlineUsers", Array.from(userSockets.keys()));
+    // Track Online Status (Simplified for single-instance, expandable for Redis)
+    onlineUsers.add(userId);
+    io.emit("getOnlineUsers", Array.from(onlineUsers));
 
     console.log(`User connected: ${userId}`);
 
     socket.on("disconnect", () => {
-      // 3. Remove User on Disconnect
-      if (userSockets.has(userId)) {
-        const userSocketSet = userSockets.get(userId);
-        userSocketSet.delete(socket.id);
-        
-        // If no more tabs open, remove user entirely
-        if (userSocketSet.size === 0) {
-          userSockets.delete(userId);
-        }
-      }
+      // Check if user has other tabs open (other sockets in the same room)
+      // io.sockets.adapter.rooms is a Map where key=roomName, value=Set(socketIds)
+      const room = io.sockets.adapter.rooms.get(userId);
       
-      // 4. Broadcast Updated List
-      io.emit("getOnlineUsers", Array.from(userSockets.keys()));
+      if (!room || room.size === 0) {
+        onlineUsers.delete(userId);
+        io.emit("getOnlineUsers", Array.from(onlineUsers));
+      }
       console.log(`User disconnected: ${userId}`);
     });
 
     // --- TYPING EVENTS ---
     socket.on("typing", ({ receiver }) => {
-        sendNotification(receiver, "typing", { sender: socket.user._id });
+      // Broadcast to the receiver's room
+      io.to(receiver).emit("typing", { sender: userId });
     });
 
     socket.on("stopTyping", ({ receiver }) => {
-        sendNotification(receiver, "stopTyping", { sender: socket.user._id });
+      io.to(receiver).emit("stopTyping", { sender: userId });
     });
 
     // --- READ RECEIPTS ---
     socket.on("markRead", ({ senderId }) => {
-        sendNotification(senderId, "messageRead", { reader: socket.user._id });
+      io.to(senderId).emit("messageRead", { reader: userId });
     });
 
     // --- MESSAGE HANDLING ---
     socket.on("message", async (msg) => {
       const { receiver, message, attachment, attachmentType } = msg;
-      const senderId = socket.user._id.toString();
 
-      // 1. Emit to Receiver
-      sendNotification(receiver, "message", {
+      // 1. Emit to Receiver (Using Room)
+      io.to(receiver).emit("message", {
         text: message,
-        attachment,       
-        attachmentType,   
-        sender: senderId,
+        attachment,
+        attachmentType,
+        sender: userId,
         receiver: receiver,
       });
 
@@ -105,21 +120,26 @@ function setupSocket(server) {
       if (!message && attachment) {
         notifText = attachmentType === 'image' ? 'Sent an image' : 'Sent a file';
       }
-      
-      sendNotification(receiver, "notification", {
+
+      // 3. Send Notification (Using Room)
+      io.to(receiver).emit("notification", {
         type: "message",
         message: `New message: ${notifText}`,
-        senderId: senderId
+        senderId: userId
       });
 
-      // 3. Save to DB
-      await createMessage({
-        receiver,
-        sender: senderId,
-        text: message,
-        attachment,
-        attachmentType
-      });
+      // 4. Save to DB
+      try {
+        await createMessage({
+          receiver,
+          sender: userId,
+          text: message,
+          attachment,
+          attachmentType
+        });
+      } catch (error) {
+        console.error("Message Save Error:", error);
+      }
     });
   });
 }

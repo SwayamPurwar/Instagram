@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import axios from "axios";
-
+import config from "../config";
 const linkStyle = ({ isActive }) => ({
   padding: "8px 12px",
   borderRadius: 6,
@@ -14,7 +14,7 @@ export default function NavBar() {
   const isLoggedIn = !!localStorage.getItem("user");
 
   //WYSIWYG: Define API_URL
-  const API_URL = "http://localhost:3000";
+ const API_URL = config.API_URL;
 
   function handleLogout() {
     // Use API_URL

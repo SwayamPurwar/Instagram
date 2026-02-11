@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 import PostCard from "../components/PostCard.jsx";
-
+import config from "../config"; // <--- IMPORT CONFIG
 export default function PostDetails() {
   const { id } = useParams();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const API_URL = "http://localhost:3000";
+// FIX: Use config
+  const API_URL = config.API_URL;
 
   useEffect(() => {
     axios.get(`${API_URL}/posts/${id}`, { withCredentials: true })

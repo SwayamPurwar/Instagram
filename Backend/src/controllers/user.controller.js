@@ -40,10 +40,9 @@ export async function searchUsersController(req, res) {
     }
 
     // Search for users (case-insensitive) and exclude password
+    // FIX: Use $text search instead of $regex for performance
     const users = await userModel
-      .find({
-        username: { $regex: query, $options: "i" },
-      })
+      .find({ $text: { $search: query } }) 
       .select("-password")
       .limit(10);
 

@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-
+import config from "../config"; // Import
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const API_URL = "http://localhost:3000";
+ // FIX: Use config
+  const API_URL = config.API_URL;
 
   function handleChange(e) {
     const { name, value } = e.target;

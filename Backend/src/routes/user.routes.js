@@ -9,7 +9,12 @@ import {
 } from "../controllers/user.controller.js";
 import multer from "multer"; // Import multer
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // FIX: Limit file size to 5MB
+  }
+});
 const router = express.Router();
 
 // Search route

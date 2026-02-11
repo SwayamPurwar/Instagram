@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
-
+import config from "../config"; // <--- IMPORT CONFIG
 export default function UserSearch() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  const API_URL = "http://localhost:3000";
-
+// FIX: Use config
+  const API_URL = config.API_URL;
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (query.trim()) {

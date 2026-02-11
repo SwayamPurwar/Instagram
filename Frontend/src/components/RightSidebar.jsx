@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
-
+import config from "../config";
 export default function RightSidebar() {
   const [suggestions, setSuggestions] = useState([]);
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-  const API_URL = "http://localhost:3000";
+ const API_URL = config.API_URL;
 
   useEffect(() => {
     axios.get(`${API_URL}/users/suggested`, { withCredentials: true })

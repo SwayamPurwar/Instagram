@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
-
+import config from "../config"; // <--- IMPORT CONFIG
 export default function Profile() {
   const [user, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -12,7 +12,8 @@ export default function Profile() {
   
   const { id } = useParams();
   const navigate = useNavigate();
-  const API_URL = "http://localhost:3000";
+ // FIX: Use config
+  const API_URL = config.API_URL;
   
   // FIX: Determine if it's "my" profile even if ID is present
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
