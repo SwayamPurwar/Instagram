@@ -3,67 +3,54 @@
   /* --- Liquid Glass Theme Variables --- */
   
   /* The "Liquid" Background Gradient Colors */
-  --liquid-bg-1: #f0f8ff;
-  --liquid-bg-2: #e6e9f0;
-  --liquid-blob-1: #ff9a9e;
-  --liquid-blob-2: #fad0c4;
-  --liquid-blob-3: #a18cd1;
+  --liquid-bg-1: #f2f7ff;
+  --liquid-bg-2: #e8ecf4;
   
-  /* Glass Panels */
-  --glass-bg: rgba(255, 255, 255, 0.65);
-  --glass-border: rgba(255, 255, 255, 0.4);
-  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-  --glass-blur: 20px;
+  /* Refined Blob Colors (Softer/More Modern) */
+  --liquid-blob-1: #ffb6c1; /* Pastel Pink */
+  --liquid-blob-2: #c5dcff; /* Pastel Blue */
+  --liquid-blob-3: #dcd6ff; /* Pastel Purple */
+  
+  /* Glass Panels - HIGH FIDELITY */
+  --glass-bg: rgba(255, 255, 255, 0.75); /* More opaque for readability */
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  --glass-blur: 24px;
 
-  /* Text */
-  --text: #1d1d1f; /* Apple Dark Grey */
+  /* Text & Borders */
+  --text: #1d1d1f; 
   --text-secondary: #86868b;
-  --border: rgba(0,0,0,0.1); /* Fallback border */
+  --border: rgba(0,0,0,0.06);
   
   /* Accents */
-  --primary: #0071e3; /* Apple Blue */
+  --primary: #0071e3;
   --primary-hover: #0077ed;
-  --button-text: #ffffff;
   --danger: #ff3b30;
   
-  /* Chat Colors */
-  --chat-me-bg: linear-gradient(135deg, #0071e3, #00c6ff);
-  --chat-me-text: #ffffff;
-  --chat-them-bg: rgba(255, 255, 255, 0.5);
-  --chat-them-text: #1d1d1f;
-
-  /* Components */
+  /* Layout */
   --card-radius: 24px;
-  --nav-active-bg: rgba(0, 0, 0, 0.05);
-  
-  --max-width: 980px;
   --nav-height: 60px;
-  --sidebar-width: 280px;
+  --max-width: 980px;
 
   color-scheme: light;
 }
 
 [data-theme="dark"] {
   /* Dark Mode Liquid */
-  --liquid-bg-1: #000000;
-  --liquid-bg-2: #1a1a1a;
-  --liquid-blob-1: #434343;
-  --liquid-blob-2: #000000;
-  --liquid-blob-3: #2c3e50;
+  --liquid-bg-1: #050505;
+  --liquid-bg-2: #0a0a0a;
+  --liquid-blob-1: #2d1b2e;
+  --liquid-blob-2: #0f1c2e;
+  --liquid-blob-3: #1a1a2e;
 
-  /* Dark Glass */
-  --glass-bg: rgba(30, 30, 30, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.1);
+  /* Dark Glass - HIGH FIDELITY */
+  --glass-bg: rgba(30, 30, 30, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
   
   --text: #f5f5f7;
-  --text-secondary: #86868b;
+  --text-secondary: #a1a1a6;
   --border: rgba(255,255,255,0.1);
-  
-  --chat-them-bg: rgba(255, 255, 255, 0.1);
-  --chat-them-text: #f5f5f7;
-  
-  --nav-active-bg: rgba(255, 255, 255, 0.1);
 
   color-scheme: dark;
 }

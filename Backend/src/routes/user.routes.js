@@ -1,31 +1,30 @@
 import express from "express";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
-// FIX: Import getUserByIdController here
 import {
   searchUsersController,
   getUserByIdController,
   updateProfileController, 
-  getSuggestedUsersController // 1. Import// <--- MAKE SURE THIS IS IMPORTED
+  getSuggestedUsersController
 } from "../controllers/user.controller.js";
-import multer from "multer"; // Import multer
+import multer from "multer"; 
 
+// Configure Multer (Memory Storage)
 const upload = multer({ 
   storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 5 * 1024 * 1024, // FIX: Limit file size to 5MB
-  }
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
+
 const router = express.Router();
 
-// Search route
 router.get("/search", authMiddleware, searchUsersController);
-router.get("/suggested", authMiddleware, getSuggestedUsersController); //
-// Get specific user by ID
+router.get("/suggested", authMiddleware, getSuggestedUsersController);
 router.get("/:id", authMiddleware, getUserByIdController);
+
+// Update Route (accepts 'image' field)
 router.put(
   "/update",
   authMiddleware,
-  upload.single("image"),
+  upload.single("image"), // <--- Must match frontend formData.append('image', ...)
   updateProfileController
 );
 

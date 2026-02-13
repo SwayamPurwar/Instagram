@@ -471,3 +471,80 @@ body::after { background: radial-gradient(circle at 20% 80%, var(--liquid-blob-2
 @keyframes fadeOut {
   to { opacity: 0; pointer-events: none; }
 }
+
+/* Container */
+.skeleton-post {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+/* Header Section */
+.skeleton-header {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+}
+
+.skeleton-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  margin-right: 12px;
+}
+
+.skeleton-info {
+  flex: 1;
+}
+
+/* Image Section */
+.skeleton-image {
+  width: 100%;
+  aspect-ratio: 1 / 1; /* Keeps it square */
+}
+
+/* Footer Section */
+.skeleton-footer {
+  padding: 12px;
+}
+
+.skeleton-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.skeleton-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.skeleton-text {
+  height: 14px;
+  border-radius: 4px;
+  background: var(--border);
+}
+
+/* --- THE SHIMMER ANIMATION --- */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 25%,
+    var(--border) 50%,
+    var(--bg-secondary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-effect 1.5s infinite linear;
+}
+
+@keyframes shimmer-effect {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}

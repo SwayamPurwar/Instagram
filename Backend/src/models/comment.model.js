@@ -3,12 +3,12 @@ import mongoose from "mongoose";
 const commentSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "user", // FIX: Changed from 'users' to 'user'
+    ref: "user", // Matches userModel registration
     required: true,
   },
   post: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "posts",
+    ref: "posts", // Matches postModel registration
     required: true,
   },
   text: {
@@ -18,5 +18,4 @@ const commentSchema = new mongoose.Schema({
 });
 
 const commentModel = mongoose.model("comments", commentSchema);
-
 export default commentModel;

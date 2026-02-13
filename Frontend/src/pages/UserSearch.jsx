@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import config from "../config"; // <--- IMPORT CONFIG
+import config from "../config"; 
+
 export default function UserSearch() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
-// FIX: Use config
   const API_URL = config.API_URL;
+
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (query.trim()) {
@@ -30,28 +31,38 @@ export default function UserSearch() {
   }
 
   return (
-    <div className="container page-enter">
-      {/* Floating Glass Header */}
-      <div className="search-header">
-        <div className="search-bar-glass">
-          <svg width="20" height="20" fill="none" stroke="var(--text-secondary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <div className="container page-enter" style={{ maxWidth: '700px' }}>
+      
+      {/* 1. FLOATING SEARCH HEADER */}
+      <div style={{ position: 'sticky', top: '20px', zIndex: 50, marginBottom: '30px' }}>
+        <div style={{ position: 'relative' }}>
+          <svg 
+            style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}
+            width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"
+          >
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+          </svg>
+          
           <input
             type="text"
-            className="search-input"
+            className="glass-search-input"
             placeholder="Search for people..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             autoFocus
           />
-          {loading && <div className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }}></div>}
+          
+          {loading && (
+             <div className="spinner" style={{ position: 'absolute', right: '20px', top: '18px', width: 20, height: 20, borderWidth: 2 }}></div>
+          )}
         </div>
       </div>
 
-      {/* Results Area */}
-      <div>
+      {/* 2. RESULTS */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {!loading && results.length === 0 && query && (
           <div style={{ textAlign: "center", marginTop: "40px", opacity: 0.6 }}>
-            <div style={{ fontSize: "3rem", marginBottom: "10px" }}>🔍</div>
+            <div style={{ fontSize: "3rem", marginBottom: "10px" }}>🤔</div>
             <p>No users found for "{query}"</p>
           </div>
         )}
@@ -62,35 +73,30 @@ export default function UserSearch() {
           </div>
         )}
 
-        <div className="search-results-grid">
-          {results.map((user) => (
-            <Link to={`/profile/${user._id}`} key={user._id} className="user-card">
-              <img
-                src={user.image || "https://via.placeholder.com/56"}
-                alt={user.username}
-                style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  border: "2px solid rgba(255,255,255,0.5)"
-                }}
-              />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: '1.05rem', truncate: true }}>{user.username}</div>
-                <div className="muted" style={{ fontSize: "0.9rem", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {user.email}
+        {results.map((user) => (
+          <Link to={`/profile/${user._id}`} key={user._id} className="user-list-item">
+            <img
+              src={user.image || "https://via.placeholder.com/56"}
+              alt={user.username}
+              style={{
+                width: 56, height: 56,
+                borderRadius: "50%",
+                objectFit: "cover",
+                border: "2px solid rgba(255,255,255,0.5)"
+              }}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{user.username}</div>
+              
+              {user.bio && (
+                <div style={{ fontSize: "0.85rem", marginTop: "4px", opacity: 0.8, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                  {user.bio}
                 </div>
-                {user.bio && (
-                  <div style={{ fontSize: "0.85rem", marginTop: "4px", opacity: 0.8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {user.bio}
-                  </div>
-                )}
-              </div>
-              <div className="btn-ghost" style={{ fontSize: '1.2rem' }}>→</div>
-            </Link>
-          ))}
-        </div>
+              )}
+            </div>
+            <div className="btn-ghost" style={{ fontSize: '1.2rem' }}>→</div>
+          </Link>
+        ))}
       </div>
     </div>
   );

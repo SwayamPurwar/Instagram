@@ -1,183 +1,289 @@
 import { useEffect, useState, useRef } from "react";
-import { io } from "socket.io-client";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { useToast } from "../context/ToastContext.jsx";
-import config from "../config"; // <--- IMPORT CONFIG
+import { useSocket } from "../context/SocketContext.jsx"; // 1. Import Global Socket
+import config from "../config";
 
 export default function Chat() {
   const { receiverId } = useParams();
-  const [socket, setSocket] = useState(null);
+  const navigate = useNavigate();
+  const { addToast } = useToast();
+  
+  // 2. Use Global Socket instead of local state
+  const socket = useSocket(); 
+  
+  const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [receiver, setReceiver] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
-  const [conversations, setConversations] = useState([]);
-  const [loadingConvos, setLoadingConvos] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
-  const [isUploading, setIsUploading] = useState(false);
-  
+  const [isTyping, setIsTyping] = useState(false);
+  const [isMobileList, setIsMobileList] = useState(!receiverId);
+  const [uploading, setUploading] = useState(false);
+
   const messagesEndRef = useRef(null);
-  const fileInputRef = useRef(null);
-  const isFirstLoad = useRef(true);
-  const typingTimeoutRef = useRef(null);
-  
-  const navigate = useNavigate();
-  const { addToast } = useToast();
-  
-  // FIX: Use config
+  const imageInputRef = useRef(null);
   const API_URL = config.API_URL;
 
+  // Initialize User
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (!storedUser) { navigate("/login"); return; }
     setCurrentUser(JSON.parse(storedUser));
-    const newSocket = io(API_URL, { withCredentials: true });
-    setSocket(newSocket);
-    return () => newSocket.close();
+
+    // Fetch conversations list
+    axios.get(`${API_URL}/chat/conversations`, { withCredentials: true })
+      .then(res => setConversations(res.data.conversations || []))
+      .catch(console.error);
   }, []);
 
+  // Load Active Chat
   useEffect(() => {
     if (receiverId) {
-      isFirstLoad.current = true;
-      axios.get(`${API_URL}/users/${receiverId}`, { withCredentials: true }).then(res => setReceiver(res.data.user));
+      setIsMobileList(false);
+      // Fetch Receiver Info
+      axios.get(`${API_URL}/users/${receiverId}`, { withCredentials: true })
+        .then(res => setReceiver(res.data.user));
+      
+      // Fetch History
+      if (currentUser) {
+        axios.get(`${API_URL}/chat/chat-history/${currentUser.id}/${receiverId}`, { withCredentials: true })
+          .then(res => {
+             const formatted = res.data.chatHistory.map(msg => ({
+               text: msg.text,
+               image: msg.attachment, // Fix: Backend returns 'attachment', mapped to image
+               sender: msg.sender === currentUser.id ? "me" : "them",
+               createdAt: msg.createdAt
+             }));
+             setMessages(formatted.reverse());
+             scrollToBottom();
+          });
+      }
+    } else {
+      setIsMobileList(true);
+      setReceiver(null);
     }
-  }, [receiverId]);
+  }, [receiverId, currentUser]);
 
+  // 3. Socket Events (Using Global Socket)
   useEffect(() => {
     if (!socket) return;
+
+    // Listen for online users
     socket.on("getOnlineUsers", (users) => setOnlineUsers(users));
-    socket.on("message", (msg) => {
+    
+    // Listen for incoming messages
+    const handleMessage = (msg) => {
+      // Only append if the message belongs to the CURRENT open chat
       if (msg.sender === receiverId || msg.receiver === receiverId) {
-        setMessages((prev) => [...prev, { text: msg.text, attachment: msg.attachment, attachmentType: msg.attachmentType, sender: msg.sender === currentUser?._id ? "me" : "them", read: false }]);
-        if (msg.sender === receiverId) socket.emit("markRead", { senderId: receiverId });
+        setMessages(prev => [...prev, { 
+          text: msg.text, 
+          image: msg.attachment, // Handle attachment
+          sender: msg.sender === currentUser?.id ? "me" : "them" 
+        }]);
+        scrollToBottom();
       }
-    });
-    socket.on("typing", (data) => { if (data.sender === receiverId) setIsTyping(true); });
-    socket.on("stopTyping", (data) => { if (data.sender === receiverId) setIsTyping(false); });
-    socket.on("messageRead", (data) => { if (data.reader === receiverId) setMessages(prev => prev.map(m => ({ ...m, read: true }))); });
+    };
+
+    const handleTyping = ({ sender }) => { 
+      if (sender === receiverId) setIsTyping(true); 
+    };
+    
+    const handleStopTyping = ({ sender }) => { 
+      if (sender === receiverId) setIsTyping(false); 
+    };
+
+    socket.on("message", handleMessage);
+    socket.on("typing", handleTyping);
+    socket.on("stopTyping", handleStopTyping);
+
+    return () => {
+      socket.off("message", handleMessage);
+      socket.off("typing", handleTyping);
+      socket.off("stopTyping", handleStopTyping);
+    };
   }, [socket, receiverId, currentUser]);
 
-  useEffect(() => {
-    if (!receiverId || !currentUser) return;
-    setMessages([]);
-    axios.get(`${API_URL}/chat/chat-history/${currentUser.id}/${receiverId}?limit=5000`, { withCredentials: true }).then((res) => {
-      const formatted = res.data.chatHistory.map((msg) => ({ text: msg.text, attachment: msg.attachment, attachmentType: msg.attachmentType, sender: String(msg.sender) === String(currentUser.id) ? "me" : "them", read: msg.read }));
-      setMessages(formatted.reverse());
-    });
-  }, [receiverId, currentUser]);
+  const scrollToBottom = () => {
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+  };
 
-  useEffect(() => {
-    if (!receiverId && currentUser) {
-      setLoadingConvos(true);
-      axios.get(`${API_URL}/chat/conversations`, { withCredentials: true }).then((res) => setConversations(res.data.conversations || [])).finally(() => setLoadingConvos(false));
-    }
-  }, [receiverId, currentUser]);
+  const handleSend = (e) => {
+    e.preventDefault();
+    if (!input.trim()) return;
 
-  // --- ROBUST SCROLL LOGIC ---
-  useEffect(() => {
-    if (messagesEndRef.current) {
-        if (isFirstLoad.current) {
-            setTimeout(() => {
-                messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
-            }, 100);
-            if (messages.length > 0) isFirstLoad.current = false;
-        } else {
-            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-        }
-    }
-  }, [messages]);
-
-  const handleInputChange = (e) => {
-    setInput(e.target.value);
-    if (socket && receiverId) {
-        socket.emit("typing", { receiver: receiverId });
-        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-        typingTimeoutRef.current = setTimeout(() => { socket.emit("stopTyping", { receiver: receiverId }); }, 2000);
+    if (socket) {
+        const msgData = { receiver: receiverId, message: input };
+        socket.emit("message", msgData);
+        
+        // Optimistic Update
+        setMessages(prev => [...prev, { text: input, sender: "me" }]);
+        setInput("");
+        scrollToBottom();
+    } else {
+        addToast("Connection lost. Trying to reconnect...", "error");
     }
   };
 
-  const sendMessage = (e) => {
-    e.preventDefault(); if (!input.trim()) return;
-    socket.emit("message", { receiver: receiverId, message: input });
-    socket.emit("stopTyping", { receiver: receiverId });
-    setMessages((prev) => [...prev, { text: input, sender: "me", read: false }]);
-    setInput("");
-  };
-
-  const handleFileSelect = async (e) => {
+  const handleImageSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setIsUploading(true);
+
+    setUploading(true);
+    addToast("Sending image...", "info");
+
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", file); // Backend expects 'file'
+    formData.append("receiverId", receiverId);
+    formData.append("message", ""); 
+
     try {
-      const res = await axios.post(`${API_URL}/chat/upload`, formData, { withCredentials: true, headers: { "Content-Type": "multipart/form-data" } });
-      socket.emit("message", { receiver: receiverId, message: "", attachment: res.data.url, attachmentType: res.data.type });
-      setMessages((prev) => [...prev, { text: "", attachment: res.data.url, attachmentType: res.data.type, sender: "me", read: false }]);
-    } catch (error) { addToast("Failed to send file", "error"); } 
-    finally { setIsUploading(false); if (fileInputRef.current) fileInputRef.current.value = ""; }
+      const res = await axios.post(`${API_URL}/chat/upload`, formData, { 
+        withCredentials: true,
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+
+      // Manually emit the image message via socket so it shows up instantly
+      if (socket && res.data.url) {
+         socket.emit("message", {
+            receiver: receiverId,
+            message: "",
+            attachment: res.data.url,
+            attachmentType: "image"
+         });
+         
+         setMessages(prev => [...prev, { 
+            image: res.data.url, 
+            sender: "me" 
+         }]);
+         scrollToBottom();
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("Failed to send image", "error");
+    } finally {
+      setUploading(false);
+      if(imageInputRef.current) imageInputRef.current.value = "";
+    }
   };
 
-  const clearActiveChat = () => {
-    if (!window.confirm("Delete chat?")) return;
-    axios.delete(`${API_URL}/chat/chat-history/${receiverId}`, { withCredentials: true }).then(() => setMessages([]));
+  const handleTyping = (e) => {
+    setInput(e.target.value);
+    if (socket) {
+        socket.emit("typing", { receiver: receiverId });
+        setTimeout(() => socket.emit("stopTyping", { receiver: receiverId }), 2000);
+    }
   };
-
-  const isReceiverOnline = onlineUsers.includes(receiverId);
-
-  if (!receiverId) {
-    return (
-      <div className="container page-enter">
-        <div className="card">
-          <div style={{ padding: "24px", borderBottom: "1px solid var(--glass-border)", display: 'flex', justifyContent: 'space-between', alignItems:'center' }}><h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800 }}>Messages</h1></div>
-          {!loadingConvos && conversations.map((convo) => (
-            <div key={convo._id} style={{position: 'relative', borderBottom: "1px solid var(--glass-border)"}}>
-                <Link to={`/chat/${convo.userDetails._id}`} style={{ textDecoration: "none", color: "inherit" }}>
-                <div className="notification-item" style={{borderRadius: 0, background: 'transparent', border: 'none'}}>
-                    <img src={convo.userDetails.image || "https://via.placeholder.com/50"} className="chat-avatar" />
-                    <div style={{flex: 1, minWidth: 0}}><div style={{ fontWeight: "700", marginBottom: '4px' }}>{convo.userDetails.username}</div><div className="muted">{convo.lastMessage}</div></div>
-                </div>
-                </Link>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="chat-screen page-enter">
-      <div className="chat-header">
-        <div className="chat-user-info">
-          <Link to="/chat" className="btn-ghost" style={{ padding: '8px', fontSize: '1.2rem' }}>←</Link>
-          <Link to={`/profile/${receiverId}`} style={{display:'flex', alignItems:'center', gap: '12px', textDecoration:'none', color: 'inherit'}}>
-             <div style={{position:'relative'}}>
-                <img src={receiver?.image || "https://via.placeholder.com/40"} className="chat-avatar" alt="avatar" />
-                {isReceiverOnline && <div style={{position:'absolute', bottom: 0, right: 0, width: 10, height: 10, background: '#10b981', borderRadius: '50%', border: '2px solid #000'}}></div>}
-             </div>
-             <div style={{display:'flex', flexDirection:'column'}}>
-                <span style={{ fontWeight: "700" }}>{receiver?.username || "User"}</span>
-                <span className="muted" style={{ fontSize: '0.75rem' }}>{isTyping ? 'Typing...' : (isReceiverOnline ? 'Active now' : 'Offline')}</span>
-             </div>
-          </Link>
+    <div className="container" style={{ padding: '20px', maxWidth: '1100px' }}>
+      <div className="chat-container">
+        
+        {/* SIDEBAR LIST */}
+        <div className={`chat-sidebar ${isMobileList ? 'active' : ''}`} style={{ display: isMobileList ? 'flex' : undefined }}>
+           <div style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
+             <h2 style={{ margin: 0, fontSize: '1.5rem' }}>Messages</h2>
+           </div>
+           <div style={{ overflowY: 'auto', flex: 1 }}>
+             {conversations.map(c => (
+               <Link 
+                 key={c._id} 
+                 to={`/chat/${c.userDetails._id}`} 
+                 className={`chat-list-item ${receiverId === c.userDetails._id ? 'active' : ''}`}
+               >
+                 <img src={c.userDetails.image || "https://via.placeholder.com/40"} className="chat-avatar" alt="User" />
+                 <div style={{ flex: 1, minWidth: 0 }}>
+                   <div style={{ fontWeight: 600 }}>{c.userDetails.username}</div>
+                   <div className="muted" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                     {c.lastMessage || (c.lastAttachment === 'image' ? 'Sent an image' : '')}
+                   </div>
+                 </div>
+               </Link>
+             ))}
+             {conversations.length === 0 && (
+                <div style={{ padding: 20, textAlign: 'center', opacity: 0.6 }}>No conversations yet.</div>
+             )}
+           </div>
         </div>
-        <button onClick={clearActiveChat} className="btn-ghost" title="Clear Chat">🗑️</button>
+
+        {/* CHAT AREA */}
+        {receiverId ? (
+          <div className="chat-main" style={{ display: isMobileList ? 'none' : 'flex' }}>
+            <div className="chat-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button onClick={() => navigate('/chat')} className="btn-ghost" style={{ display: 'md-none', marginRight: '-8px' }}>←</button>
+                <img src={receiver?.image || "https://via.placeholder.com/40"} className="chat-avatar" alt="User" />
+                <div>
+                   <div style={{ fontWeight: 700 }}>{receiver?.username}</div>
+                   <div style={{ fontSize: '0.75rem', color: onlineUsers.includes(receiverId) ? '#10b981' : 'var(--text-secondary)' }}>
+                     {onlineUsers.includes(receiverId) ? 'Active now' : 'Offline'}
+                   </div>
+                </div>
+              </div>
+              <Link to={`/profile/${receiverId}`} className="btn-ghost">View Profile</Link>
+            </div>
+
+            <div className="chat-messages">
+              {messages.map((m, i) => (
+                <div key={i} className={`message-bubble ${m.sender === 'me' ? 'msg-me' : 'msg-them'}`} style={{ background: m.image ? 'transparent' : undefined, padding: m.image ? 0 : undefined, border: m.image ? 'none' : undefined, boxShadow: m.image ? 'none' : undefined }}>
+                  {m.image ? (
+                    <img 
+                      src={m.image} 
+                      alt="attachment" 
+                      className="attachment-img"
+                    />
+                  ) : (
+                    m.text
+                  )}
+                </div>
+              ))}
+              {isTyping && <div className="typing-indicator"><div className="typing-dots"><span></span><span></span><span></span></div></div>}
+              <div ref={messagesEndRef} />
+            </div>
+
+            <form onSubmit={handleSend} className="chat-input-area">
+              <div className="chat-input-wrapper">
+                <button 
+                  type="button" 
+                  className="btn-ghost" 
+                  onClick={() => imageInputRef.current.click()} 
+                  style={{ padding: '8px', color: 'var(--primary)' }}
+                  disabled={uploading}
+                >
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                </button>
+                <input 
+                  type="file" 
+                  ref={imageInputRef} 
+                  onChange={handleImageSelect} 
+                  accept="image/*" 
+                  style={{ display: 'none' }} 
+                />
+
+                <input 
+                  className="chat-input" 
+                  placeholder="Message..."
+                  value={input}
+                  onChange={handleTyping}
+                />
+                <button type="submit" className="send-btn" disabled={!input.trim()}>
+                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+              </div>
+            </form>
+          </div>
+        ) : (
+          <div className="chat-main" style={{ display: isMobileList ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center' }}>
+             <div style={{ textAlign: 'center', opacity: 0.5 }}>
+               <div style={{ fontSize: '4rem' }}>💬</div>
+               <p>Select a conversation to start chatting</p>
+             </div>
+          </div>
+        )}
+
       </div>
-      <div className="chat-messages">
-        {messages.map((m, i) => ( 
-          <div key={i} className={`message-bubble ${m.sender === "me" ? "msg-me" : "msg-them"}`}>
-            {m.attachment && (m.attachmentType === 'image' ? <a href={m.attachment} target="_blank"><img src={m.attachment} className="attachment-img"/></a> : <a href={m.attachment}>📄 File</a>)}
-            {m.text && <div>{m.text}</div>}
-            {m.sender === "me" && <div style={{fontSize:'0.6rem', textAlign:'right', marginTop:'2px', opacity:0.7}}>{m.read ? <span style={{color:'#a5f3fc', fontWeight:'bold'}}>✓✓</span> : <span>✓</span>}</div>}
-          </div> 
-        ))}
-        {isTyping && <div className="typing-indicator"><div className="typing-dots"><span></span><span></span><span></span></div></div>}
-        {isUploading && <div className="message-bubble msg-me" style={{opacity: 0.7}}>⏳ Sending...</div>}
-        <div ref={messagesEndRef} />
-      </div>
-      <form onSubmit={sendMessage} className="chat-input-container"><div className="chat-input-wrapper"><button type="button" className="btn-ghost" onClick={() => fileInputRef.current.click()} style={{fontSize:'1.3rem', padding:'0 8px'}}>📎</button><input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileSelect} /><input className="chat-input" value={input} onChange={handleInputChange} placeholder="iMessage..." autoFocus /><button type="submit" className="send-btn" disabled={!input.trim() && !isUploading}><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button></div></form>
     </div>
   );
 }

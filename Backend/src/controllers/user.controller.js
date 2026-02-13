@@ -1,24 +1,34 @@
 import userModel from "../models/user.model.js";
-import followModel from "../models/follow.model.js"; // Import this for suggestions
-import { updateUser } from "../dao/user.dao.js";
+import followModel from "../models/follow.model.js";
 import { uploadFile } from "../services/storage.service.js";
 import { v4 as uuidv4 } from "uuid";
 
+// 1. Update Profile (Bio & Image)
 export async function updateProfileController(req, res) {
   try {
     const userId = req.user._id;
     const { bio } = req.body;
 
     let updateData = {};
-    if (bio !== undefined) updateData.bio = bio;
+    
+    // Only update bio if it was provided
+    if (bio !== undefined) {
+      updateData.bio = bio;
+    }
 
     // If an image file is uploaded, upload it to ImageKit
     if (req.file) {
+      console.log("Uploading new avatar...");
       const fileData = await uploadFile(req.file, uuidv4());
       updateData.image = fileData.url;
     }
 
-    const user = await updateUser(userId, updateData);
+    // Update user in DB
+    const user = await userModel.findByIdAndUpdate(
+      userId, 
+      { $set: updateData }, 
+      { new: true } // Return the updated document
+    ).select("-password");
 
     res.status(200).json({
       message: "Profile updated successfully",
@@ -30,20 +40,21 @@ export async function updateProfileController(req, res) {
   }
 }
 
+// 2. Search Users
 export async function searchUsersController(req, res) {
   try {
     const { query } = req.query;
+    if (!query) return res.status(200).json({ users: [] });
 
-    // If no query, return empty list
-    if (!query) {
-      return res.status(200).json({ users: [] });
-    }
-
-    // Search for users (case-insensitive) and exclude password
-    // FIX: Use $text search instead of $regex for performance
+    // Regex for partial match (case-insensitive)
     const users = await userModel
-      .find({ $text: { $search: query } }) 
-      .select("-password")
+      .find({ 
+        $or: [
+            { username: { $regex: query, $options: "i" } },
+            { bio: { $regex: query, $options: "i" } }
+        ]
+      })
+      .select("-password -email")
       .limit(10);
 
     res.status(200).json({ users });
@@ -53,42 +64,36 @@ export async function searchUsersController(req, res) {
   }
 }
 
+// 3. Get User By ID
 export async function getUserByIdController(req, res) {
   try {
     const { id } = req.params;
-
     const user = await userModel.findById(id).select("-password");
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
+    if (!user) return res.status(404).json({ message: "User not found" });
     res.status(200).json({ user });
   } catch (error) {
-    console.error("Get User Error:", error);
     res.status(500).json({ message: "Error fetching user" });
   }
 }
 
-// --- NEW: Get Suggested Users ---
+// 4. Get Suggestions
 export async function getSuggestedUsersController(req, res) {
   try {
     const userId = req.user._id;
-
-    // 1. Find who I am already following
+    
+    // Find who I am already following
     const followingDocs = await followModel.find({ follower: userId });
     const followingIds = followingDocs.map(f => f.following);
 
-    // 2. Find users who are NOT me and NOT in my following list
+    // Find users NOT me and NOT following
     const suggestions = await userModel.find({
       _id: { $nin: [...followingIds, userId] }
     })
-    .limit(5) // Just 5 suggestions
-    .select("username image email"); // Only need basic info
+    .limit(5)
+    .select("username image bio");
 
     res.status(200).json({ users: suggestions });
   } catch (error) {
-    console.error("Suggestions Error:", error);
     res.status(500).json({ message: "Error fetching suggestions" });
   }
 }

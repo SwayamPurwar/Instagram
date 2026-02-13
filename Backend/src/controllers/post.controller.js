@@ -1,13 +1,13 @@
 import { uploadFile } from "../services/storage.service.js";
 import { generateCaption } from "../services/ai.service.js";
-import { v4 as uuidv4 } from "uuid";
+import { v4 as uuidv4 } from "uuid"; // FIX: Import uuid
 import {
   createPost,
   getPosts,
   incrementLikeCount,
   deletePost,
   getPostById,
-  updatePost
+  updatePost,
 } from "../dao/post.dao.js";
 import { createComment, deleteComment } from "../dao/comment.dao.js";
 import { createLike, isLikeExists, deleteLike } from "../dao/like.dao.js";
@@ -15,15 +15,14 @@ import { createLike, isLikeExists, deleteLike } from "../dao/like.dao.js";
 import userModel from "../models/user.model.js";
 import postModel from "../models/post.model.js";
 import notificationModel from "../models/notification.model.js";
-import commentModel from "../models/comment.model.js"; 
+import commentModel from "../models/comment.model.js";
 import { sendNotification } from "../sockets/socket.js";
 
-// --- 1. ADD EXPLORE CONTROLLER ---
 export async function getExplorePostsController(req, res) {
   try {
-    // Fetch top 20 posts with most likes, excluding the current user's posts
-    const posts = await postModel.find({ user: { $ne: req.user._id } })
-      .sort({ likeCount: -1 }) // Highest likes first
+    const posts = await postModel
+      .find({ user: { $ne: req.user._id } })
+      .sort({ likeCount: -1 })
       .limit(20)
       .populate("user", "username image");
 
@@ -42,10 +41,14 @@ export async function toggleSavePostController(req, res) {
     const isSaved = user.savedPosts.includes(postId);
 
     if (isSaved) {
-      await userModel.findByIdAndUpdate(userId, { $pull: { savedPosts: postId } });
+      await userModel.findByIdAndUpdate(userId, {
+        $pull: { savedPosts: postId },
+      });
       res.status(200).json({ message: "Post unsaved", isSaved: false });
     } else {
-      await userModel.findByIdAndUpdate(userId, { $addToSet: { savedPosts: postId } });
+      await userModel.findByIdAndUpdate(userId, {
+        $addToSet: { savedPosts: postId },
+      });
       res.status(200).json({ message: "Post saved", isSaved: true });
     }
   } catch (error) {
@@ -65,6 +68,7 @@ export async function createPostController(req, res) {
     const file = await uploadFile(req.file, uuidv4());
     let finalCaption = caption;
 
+    // AI Caption Generation if caption is empty
     if (!finalCaption || finalCaption.trim() === "") {
       try {
         finalCaption = await generateCaption(req.file);
@@ -84,7 +88,9 @@ export async function createPostController(req, res) {
     res.status(201).json({ message: "Post created successfully", post });
   } catch (error) {
     console.error("Create Post Error:", error);
-    res.status(500).json({ message: "Failed to create post", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to create post", error: error.message });
   }
 }
 
@@ -93,14 +99,25 @@ export async function getPostController(req, res) {
     const userId = req.query.user || null;
     const currentUserId = req.user._id;
 
-    const posts = await getPosts(req.query.skip, Math.min(req.query.limit, 20), userId);
+    // Default skip/limit
+    const skip = parseInt(req.query.skip) || 0;
+    const limit = Math.min(parseInt(req.query.limit) || 10, 20);
 
-    const postsWithStatus = await Promise.all(posts.map(async (post) => {
-      const like = await isLikeExists({ user: currentUserId, post: post._id });
-      return { ...post.toObject(), isLiked: !!like };
-    }));
+    const posts = await getPosts(skip, limit, userId);
 
-    return res.status(200).json({ message: "Posts fetched successfully", posts: postsWithStatus });
+    const postsWithStatus = await Promise.all(
+      posts.map(async (post) => {
+        const like = await isLikeExists({
+          user: currentUserId,
+          post: post._id,
+        });
+        return { ...post.toObject(), isLiked: !!like };
+      }),
+    );
+
+    return res
+      .status(200)
+      .json({ message: "Posts fetched", posts: postsWithStatus });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching posts" });
@@ -112,7 +129,7 @@ export async function getSinglePostController(req, res) {
     const { id } = req.params;
     const post = await getPostById(id);
     if (!post) return res.status(404).json({ message: "Post not found" });
-    
+
     const like = await isLikeExists({ user: req.user._id, post: post._id });
     const postWithStatus = { ...post.toObject(), isLiked: !!like };
 
@@ -128,9 +145,13 @@ export async function editPostController(req, res) {
     const { id } = req.params;
     const { caption } = req.body;
     const userId = req.user._id;
-    if (!caption) return res.status(400).json({ message: "Caption is required" });
+    if (!caption)
+      return res.status(400).json({ message: "Caption is required" });
     const updatedPost = await updatePost(id, userId, { caption });
-    if (!updatedPost) return res.status(404).json({ message: "Post not found or unauthorized" });
+    if (!updatedPost)
+      return res
+        .status(404)
+        .json({ message: "Post not found or unauthorized" });
     res.status(200).json({ message: "Post updated", post: updatedPost });
   } catch (error) {
     console.error("Edit Post Error:", error);
@@ -143,15 +164,33 @@ export async function createCommentController(req, res) {
     const { post, text } = req.body;
     const user = req.user;
     const comment = await createComment({ user: user._id, post, text });
+
     try {
       const postObj = await postModel.findById(post).select("user image");
       if (postObj && postObj.user.toString() !== user._id.toString()) {
-        await notificationModel.create({ recipient: postObj.user, sender: user._id, type: "comment", post: post, text: text });
-        sendNotification(postObj.user, "notification", { message: `${user.username} commented: "${text}"`, type: "comment", sender: { username: user.username, image: user.image }, post: { image: postObj.image } });
+        await notificationModel.create({
+          recipient: postObj.user,
+          sender: user._id,
+          type: "comment",
+          post: post,
+          text: text,
+        });
+        sendNotification(postObj.user, "notification", {
+          message: `${user.username} commented: "${text}"`,
+          type: "comment",
+          sender: { username: user.username, image: user.image },
+          post: { image: postObj.image },
+        });
       }
-    } catch (err) { console.error("Notification Error (Comment):", err); }
-    return res.status(201).json({ message: "Comment created successfully", comment });
-  } catch (error) { console.error(error); res.status(500).json({ message: "Error creating comment" }); }
+    } catch (err) {
+      console.error("Notification Error (Comment):", err);
+    }
+
+    return res.status(201).json({ message: "Comment created", comment });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error creating comment" });
+  }
 }
 
 export async function createLikeController(req, res) {
@@ -163,7 +202,7 @@ export async function createLikeController(req, res) {
     if (isLikeAlreadyExists) {
       await deleteLike({ user: user._id, post });
       await incrementLikeCount(post, -1);
-      return res.status(200).json({ message: "Like removed successfully", isLiked: false });
+      return res.status(200).json({ message: "Like removed", isLiked: false });
     }
 
     await incrementLikeCount(post, 1);
@@ -172,13 +211,28 @@ export async function createLikeController(req, res) {
     try {
       const postObj = await postModel.findById(post).select("user image");
       if (postObj && postObj.user.toString() !== user._id.toString()) {
-        await notificationModel.create({ recipient: postObj.user, sender: user._id, type: "like", post: post });
-        sendNotification(postObj.user, "notification", { message: `${user.username} liked your post`, type: "like", sender: { username: user.username, image: user.image }, post: { image: postObj.image } });
+        await notificationModel.create({
+          recipient: postObj.user,
+          sender: user._id,
+          type: "like",
+          post: post,
+        });
+        sendNotification(postObj.user, "notification", {
+          message: `${user.username} liked your post`,
+          type: "like",
+          sender: { username: user.username, image: user.image },
+          post: { image: postObj.image },
+        });
       }
-    } catch (err) { console.error("Notification Error (Like):", err); }
+    } catch (err) {
+      console.error("Notification Error (Like):", err);
+    }
 
-    res.status(201).json({ message: "Post liked successfully", like, isLiked: true });
-  } catch (error) { console.error(error); res.status(500).json({ message: "Error updating like" }); }
+    res.status(201).json({ message: "Post liked", like, isLiked: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error updating like" });
+  }
 }
 
 export async function deletePostController(req, res) {
@@ -186,9 +240,15 @@ export async function deletePostController(req, res) {
     const postId = req.params.id;
     const userId = req.user._id;
     const deletedPost = await deletePost(postId, userId);
-    if (!deletedPost) return res.status(404).json({ message: "Post not found or unauthorized" });
+    if (!deletedPost)
+      return res
+        .status(404)
+        .json({ message: "Post not found or unauthorized" });
     res.status(200).json({ message: "Post deleted successfully" });
-  } catch (error) { console.error("Delete Post Error:", error); res.status(500).json({ message: "Error deleting post" }); }
+  } catch (error) {
+    console.error("Delete Post Error:", error);
+    res.status(500).json({ message: "Error deleting post" });
+  }
 }
 
 export async function deleteCommentController(req, res) {
@@ -197,30 +257,41 @@ export async function deleteCommentController(req, res) {
     const userId = req.user._id;
     const comment = await commentModel.findById(commentId);
     if (!comment) return res.status(404).json({ message: "Comment not found" });
-    if (comment.user.toString() !== userId.toString()) return res.status(403).json({ message: "Unauthorized" });
+    if (comment.user.toString() !== userId.toString())
+      return res.status(403).json({ message: "Unauthorized" });
     await deleteComment(commentId);
     res.status(200).json({ message: "Comment deleted" });
-  } catch (error) { console.error("Delete Comment Error:", error); res.status(500).json({ message: "Error deleting comment" }); }
+  } catch (error) {
+    console.error("Delete Comment Error:", error);
+    res.status(500).json({ message: "Error deleting comment" });
+  }
 }
 
 export async function generateCaptionController(req, res) {
   try {
-    if (!req.file) return res.status(400).json({ message: "Image file is required." });
+    if (!req.file)
+      return res.status(400).json({ message: "Image file is required." });
     const caption = await generateCaption(req.file);
-    res.status(200).json({ message: "Caption generated successfully", caption });
-  } catch (error) { console.error("Generate Caption Error:", error); res.status(500).json({ message: "Failed to generate caption" }); }
+    res
+      .status(200)
+      .json({ message: "Caption generated successfully", caption });
+  } catch (error) {
+    console.error("Generate Caption Error:", error);
+    res.status(500).json({ message: "Failed to generate caption" });
+  }
 }
 
 export async function getSavedPostsController(req, res) {
   try {
     const userId = req.user._id;
     const user = await userModel.findById(userId);
-    
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const posts = await postModel.find({ _id: { $in: user.savedPosts } })
+    const posts = await postModel
+      .find({ _id: { $in: user.savedPosts } })
       .sort({ createdAt: -1 })
       .populate("user", "username image")
       .populate("mentions", "username")
@@ -229,14 +300,35 @@ export async function getSavedPostsController(req, res) {
         populate: { path: "user", select: "username" },
       });
 
-    const postsWithStatus = await Promise.all(posts.map(async (post) => {
-      const like = await isLikeExists({ user: userId, post: post._id });
-      return { ...post.toObject(), isLiked: !!like };
-    }));
+    const postsWithStatus = await Promise.all(
+      posts.map(async (post) => {
+        const like = await isLikeExists({ user: userId, post: post._id });
+        return { ...post.toObject(), isLiked: !!like };
+      }),
+    );
 
     res.status(200).json({ posts: postsWithStatus });
   } catch (error) {
     console.error("Get Saved Posts Error:", error);
     res.status(500).json({ message: "Error fetching saved posts" });
+  }
+}
+// Backend/src/controllers/post.controller.js
+
+export async function searchPostsController(req, res) {
+  try {
+    const { query } = req.query;
+    if (!query) return res.status(200).json({ posts: [] });
+
+    const posts = await postModel
+      .find({ caption: { $regex: query, $options: "i" } }) // Case-insensitive search in caption
+      .sort({ likeCount: -1 }) // Show most liked matches first
+      .limit(20)
+      .populate("user", "username image");
+
+    res.status(200).json({ posts });
+  } catch (error) {
+    console.error("Post Search Error:", error);
+    res.status(500).json({ message: "Error searching posts" });
   }
 }

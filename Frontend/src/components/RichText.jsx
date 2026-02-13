@@ -12,7 +12,7 @@ export default function RichText({ text }) {
       {parts.map((part, i) => {
         if (part.startsWith("#")) {
           // Hashtag Link (You'll need a search page handling this query)
-          return <Link key={i} to={`/user-search?q=${part.slice(1)}`} style={{ color: "var(--primary)" }}>{part}</Link>;
+          return <Link key={i} to={`/explore?q=${part.slice(1)}`} style={{ color: "var(--primary)" }}>{part}</Link>;
         } else if (part.startsWith("@")) {
           // Mention Link
           // Note: This assumes the username exists. 

@@ -3,6 +3,7 @@ import axios from "axios";
 import { useToast } from "../context/ToastContext.jsx";
 import StoryViewer from "./StoryViewer.jsx"; 
 import config from "../config";
+
 export default function Stories() {
   const [stories, setStories] = useState([]);
   const [viewingStories, setViewingStories] = useState(null); 
@@ -11,7 +12,7 @@ export default function Stories() {
   let addToast = (msg) => console.log(msg);
   try { const toast = useToast(); if (toast) addToast = toast.addToast; } catch (e) {}
 
-const API_URL = config.API_URL;
+  const API_URL = config.API_URL;
   
   const groupedStories = stories.reduce((acc, story) => {
     if (!story.user) return acc;
@@ -64,55 +65,41 @@ const API_URL = config.API_URL;
         />
       )}
 
-      <div className="card" style={{ 
-        padding: '20px', 
-        marginBottom: '24px', 
-        overflowX: 'auto', 
-        whiteSpace: 'nowrap', 
-        display: 'flex',
-        background: 'var(--glass-bg)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid var(--glass-border)',
-        boxShadow: 'var(--glass-shadow)'
-      }}>
-        <div style={{ display: 'flex', gap: '20px', alignItems: 'center', minWidth: 'min-content' }}>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => fileInputRef.current.click()}>
-            <div style={{ 
-               width: 68, height: 68, borderRadius: '50%', 
-               border: '2px dashed var(--text-secondary)', 
-               display: 'flex', alignItems: 'center', justifyContent: 'center',
-               fontSize: '2rem', color: 'var(--primary)',
-               background: 'rgba(255,255,255,0.1)'
-            }}>
-              +
-            </div>
-            <span style={{ fontSize: '0.8rem', width: 70, textAlign: 'center', overflow:'hidden', textOverflow:'ellipsis', fontWeight: 500 }}>Your Story</span>
-            <input ref={fileInputRef} type="file" style={{display:'none'}} accept="image/*" onChange={handleUpload} />
+      <div className="stories-rail">
+        {/* ADD STORY BUTTON */}
+        <div className="story-item" onClick={() => fileInputRef.current.click()}>
+          <div className="story-ring add-story">
+            <span>+</span>
           </div>
-
-          {storyList.map((group) => (
-            <div 
-              key={group.user._id} 
-              onClick={() => setViewingStories(group.items)}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
-            >
-              <div className="story-ring" style={{ 
-                 width: 72, height: 72, borderRadius: '50%', 
-                 padding: '3px', 
-              }}>
-                <img 
-                  src={group.user.image || "https://via.placeholder.com/60"} 
-                  alt={group.user.username} 
-                  style={{ width: '100%', height: '100%', borderRadius: '50%', border: '3px solid var(--card)', objectFit: 'cover', background: 'var(--card)' }}
-                />
-              </div>
-              <span style={{ fontSize: '0.8rem', width: 70, textAlign: 'center', overflow:'hidden', textOverflow:'ellipsis', fontWeight: 500 }}>
-                {group.user.username}
-              </span>
-            </div>
-          ))}
+          <span className="story-username">Your Story</span>
+          <input 
+            ref={fileInputRef} 
+            type="file" 
+            style={{display:'none'}} 
+            accept="image/*" 
+            onChange={handleUpload} 
+          />
         </div>
+
+        {/* STORY LIST */}
+        {storyList.map((group) => (
+          <div 
+            key={group.user._id} 
+            className="story-item"
+            onClick={() => setViewingStories(group.items)}
+          >
+            <div className="story-ring">
+              <img 
+                src={group.user.image || "https://via.placeholder.com/60"} 
+                alt={group.user.username} 
+                className="story-avatar"
+              />
+            </div>
+            <span className="story-username">
+              {group.user.username}
+            </span>
+          </div>
+        ))}
       </div>
     </>
   );

@@ -1,25 +1,30 @@
-import React from "react";
+import React from 'react';
 
 export default function SkeletonPost() {
   return (
-    <div className="card skeleton-card">
-      {/* Header */}
-      <div style={{ padding: "14px", display: "flex", alignItems: "center", gap: "10px" }}>
-        <div className="skeleton" style={{ width: 32, height: 32, borderRadius: "50%" }}></div>
-        <div className="skeleton" style={{ width: 120, height: 14 }}></div>
+    <div className="skeleton-post">
+      {/* Header: Avatar + Username */}
+      <div className="skeleton-header">
+        <div className="skeleton-avatar shimmer" />
+        <div className="skeleton-info">
+          <div className="skeleton-text shimmer" style={{ width: '30%' }} />
+          <div className="skeleton-text shimmer" style={{ width: '20%', height: '10px', marginTop: '4px' }} />
+        </div>
       </div>
 
-      {/* Image Placeholder */}
-      <div className="skeleton" style={{ width: "100%", aspectRatio: "4/5" }}></div>
+      {/* Main Content: The Image Square */}
+      <div className="skeleton-image shimmer" />
 
-      {/* Footer Actions */}
-      <div style={{ padding: "12px" }}>
-        <div style={{ display: "flex", gap: "16px", marginBottom: "12px" }}>
-          <div className="skeleton" style={{ width: 24, height: 24 }}></div>
-          <div className="skeleton" style={{ width: 24, height: 24 }}></div>
-          <div className="skeleton" style={{ width: 24, height: 24 }}></div>
+      {/* Footer: Action Buttons + Caption */}
+      <div className="skeleton-footer">
+        <div className="skeleton-actions">
+          <div className="skeleton-icon shimmer" />
+          <div className="skeleton-icon shimmer" />
+          <div className="skeleton-icon shimmer" />
         </div>
-        <div className="skeleton" style={{ width: "60%", height: 14 }}></div>
+        <div className="skeleton-text shimmer" style={{ width: '40%', marginBottom: '8px' }} />
+        <div className="skeleton-text shimmer" style={{ width: '90%' }} />
+        <div className="skeleton-text shimmer" style={{ width: '70%', marginTop: '6px' }} />
       </div>
     </div>
   );

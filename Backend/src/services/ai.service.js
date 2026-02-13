@@ -1,20 +1,19 @@
 import { GoogleGenAI } from "@google/genai";
-const ai = new GoogleGenAI({});
+import config from "../config/config.js";
 
+// The client can also pick up GEMINI_API_KEY from process.env automatically
+const ai = new GoogleGenAI({ apiKey: config.GEMINI_API_KEY });
 export async function generateCaption(file) {
   try {
     const base64Image = file.buffer.toString("base64");
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3-flash-preview", // Use the new Gemini 3 Flash model
       contents: [
         {
           role: "user",
           parts: [
-            { 
-              // UPDATED PROMPT: Strict instructions for a single string
-              text: "Return ONLY one single, short, engaging Instagram caption for this image. Do not include categories, options, or extra text. Just the caption with a few emojis." 
-            },
+            { text: "Return ONLY one single, short, engaging Instagram caption for this image with emojis." },
             {
               inlineData: {
                 data: base64Image,
@@ -24,13 +23,17 @@ export async function generateCaption(file) {
           ],
         },
       ],
+      config: {
+        thinkingConfig: {
+          thinkingLevel: "LOW" // Optional: Optimizes for low latency
+        }
+      }
     });
 
-    // Extract the text content from the AI's response
     return response.text || "Captured this moment 📸";
 
   } catch (error) {
-    console.error("⚠️ AI Formatting Error:", error.message);
+    console.error("⚠️ Gemini 3 Migration Error:", error.message);
     return "New post! ✨ #InstagramClone";
   }
 }

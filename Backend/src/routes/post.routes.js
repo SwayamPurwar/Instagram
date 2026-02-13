@@ -13,7 +13,8 @@ import {
   deleteCommentController,
   generateCaptionController,
   getSavedPostsController,
-  getExplorePostsController // <--- 1. IMPORT
+  getExplorePostsController, // <--- 1. IMPORT
+  searchPostsController
 } from "../controllers/post.controller.js";
 import {
   createCommentValidator,
@@ -34,6 +35,8 @@ const router = express.Router();
 router.get("/", getPostsValidator, authMiddleware, getPostController);
 router.get("/saved", authMiddleware, getSavedPostsController);
 router.get("/explore", authMiddleware, getExplorePostsController); // <--- 2. ADD ROUTE (Must be before /:id) 
+router.get("/search", authMiddleware, searchPostsController);
+router.get("/:id", authMiddleware, getSinglePostController);
 
 
 
@@ -53,6 +56,7 @@ router.put("/:id", authMiddleware, editPostController);
 router.delete("/comment/:commentId", authMiddleware, deleteCommentController);
 router.delete("/:id", authMiddleware, deletePostController);
 
-router.get("/:id", authMiddleware, getSinglePostController);
+
+
 
 export default router;

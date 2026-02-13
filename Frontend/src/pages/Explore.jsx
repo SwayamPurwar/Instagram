@@ -1,15 +1,23 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom";
-import config from "../config"; // <--- IMPORT CONFIG
+import { Link, useSearchParams } from "react-router-dom";
+import config from "../config"; 
+
 export default function Explore() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-// FIX: Use config
+  const [searchParams] = useSearchParams(); // <--- Get Params
+  const query = searchParams.get("q")
   const API_URL = config.API_URL;
+
   useEffect(() => {
+    setLoading(true);
+    // Decide which endpoint to hit
+    const endpoint = query 
+      ? `${API_URL}/posts/search?query=${query}` // Search mode
+      : `${API_URL}/posts/explore`; // Default explore mode
     // Fetch trending posts
-    axios.get(`${API_URL}/posts/explore`, { withCredentials: true })
+    axios.get(endpoint, { withCredentials: true })
       .then((res) => {
         setPosts(res.data.posts);
         setLoading(false);
@@ -18,22 +26,28 @@ export default function Explore() {
         console.error(err);
         setLoading(false);
       });
-  }, []);
+  }, [query]);
 
   return (
     <div className="container page-enter">
-      <h1 style={{ marginBottom: '20px' }}>Explore</h1>
+      <div style={{ marginBottom: '30px', padding: '10px 0' }}>
+         <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0 }}>Explore</h1>
+         <p className="muted">Trending posts for you</p>
+      </div>
       
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px' }}>Loading...</div>
+        <div className="spinner-container"><div className="spinner"></div></div>
       ) : (
-        <div className="profile-grid">
+        <div className="image-grid">
           {posts.map((post) => (
-            <Link key={post._id} to={`/post/${post._id}`} className="grid-item">
-              <img src={post.image} alt="Explore Content" />
+            <Link key={post._id} to={`/post/${post._id}`} className="grid-image-container">
+              <img src={post.image} alt="Explore Content" className="grid-image" />
               <div className="grid-overlay">
-                <span style={{ fontSize: '1.2rem', display: 'flex', gap: '5px' }}>
+                <span style={{ display: 'flex', gap: '5px' }}>
                   ❤️ {post.likeCount}
+                </span>
+                <span style={{ display: 'flex', gap: '5px' }}>
+                  💬 {post.comments?.length || 0}
                 </span>
               </div>
             </Link>
@@ -42,7 +56,9 @@ export default function Explore() {
       )}
 
       {!loading && posts.length === 0 && (
-        <p className="muted" style={{ textAlign: 'center' }}>No trending posts found.</p>
+        <div style={{ textAlign: 'center', padding: '60px' }}>
+          <p className="muted">No trending posts found right now.</p>
+        </div>
       )}
     </div>
   );

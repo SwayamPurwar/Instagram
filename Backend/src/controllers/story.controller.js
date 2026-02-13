@@ -18,7 +18,7 @@ export async function createStoryController(req, res) {
 
     res.status(201).json({ message: "Story added", story });
   } catch (error) {
-    console.error("Story Upload Error:", error); // Check your terminal for this log
+    console.error("Story Upload Error:", error);
     res.status(500).json({ message: "Error adding story", error: error.message });
   }
 }
@@ -44,5 +44,28 @@ export async function getStoriesController(req, res) {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching stories" });
+  }
+}
+
+// 3. Delete a Story
+export async function deleteStoryController(req, res) {
+  try {
+    const storyId = req.params.id;
+    const userId = req.user._id;
+
+    // Find and delete (ensure user owns the story)
+    const story = await storyModel.findOneAndDelete({ 
+      _id: storyId, 
+      user: userId 
+    });
+
+    if (!story) {
+      return res.status(404).json({ message: "Story not found or unauthorized" });
+    }
+
+    res.status(200).json({ message: "Story deleted successfully" });
+  } catch (error) {
+    console.error("Delete Story Error:", error);
+    res.status(500).json({ message: "Error deleting story" });
   }
 }
