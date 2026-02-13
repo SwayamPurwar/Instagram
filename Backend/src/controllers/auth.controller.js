@@ -26,11 +26,11 @@ export async function registerController(req, res) {
     const token = jwt.sign({ _id: user._id }, config.JWT_SECRET);
 
     res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", 
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      maxAge: 24 * 60 * 60 * 1000
-    });
+  httpOnly: true,
+  secure: true,       // REQUIRED: Must be true for Vercel -> Render
+  sameSite: "none",   // REQUIRED: Must be "none" to allow cross-domain cookies
+  maxAge: 24 * 60 * 60 * 1000
+});
 
     return res.status(201).json({
       message: "User registered successfully",
@@ -67,11 +67,11 @@ export async function loginController(req, res) {
     const token = jwt.sign({ _id: user._id }, config.JWT_SECRET);
 
     res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      maxAge: 24 * 60 * 60 * 1000
-    });
+  httpOnly: true,
+  secure: true,       // REQUIRED: Must be true for Vercel -> Render
+  sameSite: "none",   // REQUIRED: Must be "none" to allow cross-domain cookies
+  maxAge: 24 * 60 * 60 * 1000
+});
 
     return res.status(200).json({
       message: "User logged in successfully",
