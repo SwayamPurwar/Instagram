@@ -1,7 +1,5 @@
 Auth
- - register
- - login
- - logout
+ - { register , login , logout}      
 
 
 Posts
