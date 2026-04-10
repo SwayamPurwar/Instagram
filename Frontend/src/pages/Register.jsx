@@ -27,7 +27,16 @@ export default function Register() {
       })
       .catch((err) => {
         console.error("Registration failed:", err);
-        setError(err.response?.data?.message || "Registration failed.");
+        
+        // FIX: Check for express-validator array of errors first
+        if (err.response?.data?.errors && err.response.data.errors.length > 0) {
+            setError(err.response.data.errors[0].msg);
+        } 
+        // Fallback for custom messages like "User already exists"
+        else {
+            setError(err.response?.data?.message || "Registration failed.");
+        }
+        
         setLoading(false);
       });
   }

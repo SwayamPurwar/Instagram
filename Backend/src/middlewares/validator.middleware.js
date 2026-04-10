@@ -15,7 +15,7 @@ export const registerValidator = [
   body("password")
     .notEmpty()
     .withMessage("Password is required")
-    .isLength({ min: 6, max: 20 })
+    .isLength({ min: 6, max: 30 })
     .withMessage("Password must be between 6 and 20 characters"),
   (req, res, next) => {
     const errors = validationResult(req);
