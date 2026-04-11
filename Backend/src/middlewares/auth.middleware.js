@@ -13,6 +13,14 @@ export async function authMiddleware(req, res, next) {
   try {
     const decoded = jwt.verify(token, config.JWT_SECRET);
     const user = await findOneUser({ _id: decoded._id });
+    
+    // ADD THIS CHECK: If the token is valid but user is deleted/not found
+    if (!user) {
+      return res.status(401).json({
+        message: "User no longer exists, please login again.",
+      });
+    }
+
     req.user = user;
     next();
   } catch (err) {

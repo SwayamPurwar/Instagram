@@ -64,7 +64,14 @@ async function setupSocket(server) {
   });
 
   io.on("connection", (socket) => {
-    const userId = socket.user._id.toString();
+    // Safely attempt to get the user ID from either _id or id
+    const userId = socket.user?._id?.toString() || socket.user?.id?.toString();
+
+    // If for some reason the ID is missing from the token payload, log and disconnect
+    if (!userId) {
+      console.error("❌ Disconnecting socket: User ID not found in token.", socket.user);
+      return socket.disconnect();
+    }
 
     // FIX 5: Scalable Routing -> User joins a room with their own ID
     socket.join(userId);
